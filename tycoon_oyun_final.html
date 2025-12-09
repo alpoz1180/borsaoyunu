@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empire Tycoon - Hazır</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Bu stiller, önceki style.css dosyasından alınmıştır. */
+        body { margin: 0; padding: 0; background-color: #0f172a; color: white; }
+        .floating-text { position: absolute; font-weight: bold; pointer-events: none; animation: floatUp 0.8s ease-out forwards; z-index: 100; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(1.5); opacity: 0; } }
+        .combo-pulse { animation: pulseRed 0.2s ease-in-out; }
+        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); transform: scale(1); } 50% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0); transform: scale(1.05); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); } }
+        .notification-toast { animation: slideInRight 0.3s ease-out; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        /* Scrollbar Düzenlemesi */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- React Hookları ve DOM Erişimleri ---
+        const { useState, useEffect, useRef, StrictMode } = React;
+        const { createRoot } = ReactDOM;
+
+        // --- İKON TANIMLAMA (HATA DÜZELTME) ---
+        // Lucide-React kütüphanesi yüklü olmadığı için, her ikonu temsil eden bir Mock bileşeni oluşturuyoruz.
+        const createMockIcon = (prop, defaultVisual) => {
+            const MockComponent = ({ size = 20, className = "" }) => {
+                let visualHint = defaultVisual; 
+                return <span className={className} style={{ fontSize: size * 0.8 + 'px' }}>{visualHint}</span>;
+            };
+            MockComponent.displayName = prop;
+            return MockComponent;
+        };
+
+        // Tüm ikonların tek tek mock bileşenlerini oluşturuyoruz
+        const IconRegistry = {
+            Coins: createMockIcon('Coins', '💰'),
+            Briefcase: createMockIcon('Briefcase', '💼'),
+            TrendingUp: createMockIcon('TrendingUp', '📈'),
+            TrendingDown: createMockIcon('TrendingDown', '📉'),
+            Building2: createMockIcon('Building2', '🏢'),
+            Zap: createMockIcon('Zap', '⚡'),
+            LayoutDashboard: createMockIcon('LayoutDashboard', '🏠'),
+            Rocket: createMockIcon('Rocket', '🚀'),
+            Coffee: createMockIcon('Coffee', '☕'),
+            Car: createMockIcon('Car', '🚗'),
+            Clapperboard: createMockIcon('Clapperboard', '🎬'),
+            Landmark: createMockIcon('Landmark', '🏛️'),
+            Fuel: createMockIcon('Fuel', '⛽'),
+            Globe: createMockIcon('Globe', '🌐'),
+            UserCheck: createMockIcon('UserCheck', '✔️'),
+            ArrowUpCircle: createMockIcon('ArrowUpCircle', '⬆️'),
+            X: createMockIcon('X', '✖️'),
+            ShieldCheck: createMockIcon('ShieldCheck', '🛡️'),
+            Bitcoin: createMockIcon('Bitcoin', '₿'),
+            DollarSign: createMockIcon('DollarSign', '$'),
+            Gem: createMockIcon('Gem', '💎'),
+            Activity: createMockIcon('Activity', '📊'),
+            Clock: createMockIcon('Clock', '⏰'),
+            ArrowRightLeft: createMockIcon('ArrowRightLeft', '↔️'),
+            Store: createMockIcon('Store', '🛒'),
+            Scissors: createMockIcon('Scissors', '✂️'),
+            ShoppingBasket: createMockIcon('ShoppingBasket', '🧺'),
+            Tv: createMockIcon('Tv', '📺'),
+            HardHat: createMockIcon('HardHat', '👷'),
+            Trophy: createMockIcon('Trophy', '🏆'),
+            Key: createMockIcon('Key', '🔑'),
+            Home: createMockIcon('Home', '🏡'),
+            MapPin: createMockIcon('MapPin', '📍'), // Düzeltilen ikon
+            Tag: createMockIcon('Tag', '🏷️'),
+            Percent: createMockIcon('Percent', '%'),
+            AlertCircle: createMockIcon('AlertCircle', '⚠️'),
+            CheckCircle: createMockIcon('CheckCircle', '✅'),
+            Wallet: createMockIcon('Wallet', '💳'),
+            Lock: createMockIcon('Lock', '🔒'),
+            Save: createMockIcon('Save', '💾')
+        };
+        
+        // Ikonları, React kodunun beklediği gibi destructure ediyoruz.
+        const { 
+            Coins, Briefcase, TrendingUp, TrendingDown, Building2, Zap, 
+            LayoutDashboard, Rocket, Coffee, Car, Clapperboard, 
+            Landmark, Fuel, Globe, UserCheck, ArrowUpCircle, X, ShieldCheck,
+            Bitcoin, DollarSign, Gem, Activity, Clock, ArrowRightLeft, Store,
+            Scissors, ShoppingBasket, Tv, HardHat, Trophy, Key, Home, MapPin,
+            Tag, Percent, AlertCircle, CheckCircle, Wallet, Lock, Save
+        } = IconRegistry;
+
+
+        // --- SABİT VERİLER (PERFORMANS İÇİN BİLEŞEN DIŞINA ALINDI) ---
+        const INITIAL_BUSINESSES = [
+          { id: 1, name: 'Simit Tezgahı', baseCost: 500, income: 25, count: 0, icon: <div className="text-yellow-600 text-2xl">🥯</div>, category: 1, currency: 'TL', hasManager: false, managerCost: 2000, level: 1, upgradeCost: 5000 },
+          { id: 101, name: 'Mahalle Bakkalı', baseCost: 1500, income: 80, count: 0, icon: <ShoppingBasket className="text-green-600" size={28} />, category: 1, currency: 'TL', hasManager: false, managerCost: 4000, level: 1, upgradeCost: 9000 },
+          { id: 2, name: 'Çay Bahçesi', baseCost: 3500, income: 180, count: 0, icon: <div className="text-red-700 text-2xl">☕</div>, category: 1, currency: 'TL', hasManager: false, managerCost: 10000, level: 1, upgradeCost: 25000 },
+          { id: 102, name: 'Erkek Berberi', baseCost: 8000, income: 450, count: 0, icon: <Scissors className="text-blue-500" size={28} />, category: 1, currency: 'TL', hasManager: false, managerCost: 20000, level: 1, upgradeCost: 40000 },
+          { id: 3, name: 'Kebap Restoranı', baseCost: 20000, income: 1200, count: 0, icon: <div className="text-orange-600 text-2xl">🌯</div>, category: 1, currency: 'TL', hasManager: false, managerCost: 50000, level: 1, upgradeCost: 100000 },
+          { id: 103, name: 'Halı Saha', baseCost: 60000, income: 3500, count: 0, icon: <Trophy className="text-emerald-500" size={28} />, category: 1, currency: 'TL', hasManager: false, managerCost: 120000, level: 1, upgradeCost: 250000 },
+          { id: 104, name: 'İnşaat Şirketi', baseCost: 250000, income: 15000, count: 0, icon: <HardHat className="text-yellow-500" size={28} />, category: 1, currency: 'TL', hasManager: false, managerCost: 500000, level: 1, upgradeCost: 1000000 },
+          { id: 105, name: 'Ulusal TV Kanalı', baseCost: 1000000, income: 65000, count: 0, icon: <Tv className="text-purple-500" size={28} />, category: 1, currency: 'TL', hasManager: false, managerCost: 2500000, level: 1, upgradeCost: 5000000 },
+          { id: 4, name: 'Yazılım Şirketi', baseCost: 2000, income: 150, count: 0, icon: <div className="text-blue-400 text-2xl">💻</div>, category: 2, currency: 'USD', hasManager: false, managerCost: 5000, level: 1, upgradeCost: 10000 },
+          { id: 5, name: 'Lojistik Filosu', baseCost: 10000, income: 800, count: 0, icon: <div className="text-gray-400 text-2xl">🚢</div>, category: 2, currency: 'USD', hasManager: false, managerCost: 25000, level: 1, upgradeCost: 50000 },
+          { id: 6, name: 'Oto Galeri', baseCost: 50000, income: 3500, count: 0, icon: <Car className="text-blue-600" size={28} />, category: 3, currency: 'USD', hasManager: false, managerCost: 150000, level: 1, upgradeCost: 300000 },
+          { id: 7, name: 'Petrol Rafinerisi', baseCost: 250000, income: 18000, count: 0, icon: <Fuel className="text-gray-500" size={28} />, category: 3, currency: 'USD', hasManager: false, managerCost: 1000000, level: 1, upgradeCost: 2000000 },
+          { id: 8, name: 'Uzay İstasyonu', baseCost: 5000000, income: 450000, count: 0, icon: <Rocket className="text-orange-500" size={28} />, category: 4, currency: 'USD', hasManager: false, managerCost: 15000000, level: 1, upgradeCost: 30000000 }
+        ];
+
+        const CAR_CATALOG = [
+            { id: 'car1', name: 'Tofaş Şahin', marketValue: 400000, currency: 'TL', icon: '🚗' },
+            { id: 'car2', name: 'Renault Clio', marketValue: 950000, currency: 'TL', icon: '🚙' },
+            { id: 'car3', name: 'Fiat Egea', marketValue: 1200000, currency: 'TL', icon: '🚕' },
+            { id: 'car4', name: 'Toyota Corolla', marketValue: 1600000, currency: 'TL', icon: '⚪' },
+            { id: 'car5', name: 'Honda Civic (Mod)', marketValue: 1800000, currency: 'TL', icon: '🔰' },
+            { id: 'car6', name: 'VW Passat (Aşiret)', marketValue: 2500000, currency: 'TL', icon: '🕶️' },
+            { id: 'car7', name: 'Mercedes C200', marketValue: 3500000, currency: 'TL', icon: '⭐' },
+            { id: 'car8', name: 'BMW 520i', marketValue: 5000000, currency: 'TL', icon: '🏎️' },
+            { id: 'car10', name: 'Range Rover', marketValue: 550000, currency: 'USD', icon: '🏔️' },
+            { id: 'car11', name: 'G-Wagon G63', marketValue: 800000, currency: 'USD', icon: '📦' },
+            { id: 'car12', name: 'Lamborghini', marketValue: 1200000, currency: 'USD', icon: '🐂' },
+            { id: 'car13', name: 'Bugatti Chiron', marketValue: 4000000, currency: 'USD', icon: '🚀' },
+        ];
+
+        const INITIAL_ESTATES = [
+            { id: 'est1', type: 'estate', name: 'Öğrenci Evi', cost: 1500000, income: 7500, currency: 'TL', count: 0, icon: '🏚️' },
+            { id: 'est2', type: 'estate', name: '1+1 Daire', cost: 3500000, income: 18000, currency: 'TL', count: 0, icon: '🏠' },
+            { id: 'est3', type: 'estate', name: 'Lüks Rezidans', cost: 15000000, income: 85000, currency: 'TL', count: 0, icon: '🏢' },
+            { id: 'est4', type: 'estate', name: 'Boğazda Yalı', cost: 25000000, income: 400000, currency: 'USD', count: 0, icon: '🏰' },
+            { id: 'ist1', type: 'estate', name: 'Çatalca Arsa', cost: 2000000, income: 8000, currency: 'TL', count: 0, icon: '🌾' },
+            { id: 'ist2', type: 'estate', name: 'Silivri Yazlık', cost: 2200000, income: 8500, currency: 'TL', count: 0, icon: '🌻' },
+            { id: 'ist3', type: 'estate', name: 'Şile Villa', cost: 2500000, income: 9000, currency: 'TL', count: 0, icon: '🌲' },
+            { id: 'ist34', type: 'estate', name: 'Kadıköy Dükkan', cost: 40000000, income: 140000, currency: 'TL', count: 0, icon: '🐂' },
+            { id: 'ist38', type: 'estate', name: 'Beşiktaş Plaza', cost: 100000000, income: 350000, currency: 'TL', count: 0, icon: '🦅' },
+        ];
+
+        const INITIAL_ASSETS = [
+          // KRİPTO
+          { id: 'BTC', name: 'Bitcoin', type: 'crypto', price: 65000, owned: 0, history: [65000], volatility: 0.08, change: 0 },
+          { id: 'ETH', name: 'Ethereum', type: 'crypto', price: 3500, owned: 0, history: [3500], volatility: 0.09, change: 0 },
+          { id: 'SOL', name: 'Solana', type: 'crypto', price: 145, owned: 0, history: [145], volatility: 0.12, change: 0 },
+          
+          // HİSSE
+          { id: 'AAPL', name: 'Apple', type: 'stock', price: 180, owned: 0, history: [180], volatility: 0.03, change: 0 },
+          { id: 'TSLA', name: 'Tesla', type: 'stock', price: 240, owned: 0, history: [240], volatility: 0.05, change: 0 },
+          { id: 'NVDA', name: 'Nvidia', type: 'stock', price: 800, owned: 0, history: [800], volatility: 0.06, change: 0 },
+          
+          // EMTİA
+          { id: 'GOLD', name: 'Altın (Ons)', type: 'commodity', price: 2300, owned: 0, history: [2300], volatility: 0.015, change: 0 },
+          { id: 'OIL', name: 'Petrol (Varil)', type: 'commodity', price: 85, owned: 0, history: [85], volatility: 0.025, change: 0 },
+        ];
+
+        function EmpireTycoonLocked() {
+          const [moneyTL, setMoneyTL] = useState(10000000);
+          const [moneyUSD, setMoneyUSD] = useState(10000000);
+          const [exchangeRate, setExchangeRate] = useState(34.20);
+          const [time, setTime] = useState(new Date());
+          
+          const [businesses, setBusinesses] = useState(INITIAL_BUSINESSES);
+          const [estates, setEstates] = useState(INITIAL_ESTATES);
+          const [assets, setAssets] = useState(INITIAL_ASSETS);
+          const [garage, setGarage] = useState([]);
+          
+          const [activeTab, setActiveTab] = useState('clicker'); 
+          const [galleryTab, setGalleryTab] = useState('dealer'); 
+          const [marketTab, setMarketTab] = useState('exchange'); 
+          
+          const [selectedAssetId, setSelectedAssetId] = useState(null);
+          const [selectedCarForSale, setSelectedCarForSale] = useState(null);
+          const [selectedBusinessId, setSelectedBusinessId] = useState(null);
+          const [sellInputPrice, setSellInputPrice] = useState('');
+          const [notifications, setNotifications] = useState([]);
+          const [lastTick, setLastTick] = useState(Date.now());
+          const [comboActive, setComboActive] = useState(false);
+          const lastTouchTimeRef = useRef(0);
+
+          const clickValueTL = 10; 
+
+          // --- KİLİT KONTROLÜ (OTO GALERİ ID: 6) ---
+          const isGalleryUnlocked = businesses.find(b => b.id === 6)?.count > 0;
+
+          // --- SAVE / LOAD SİSTEMİ ---
+          useEffect(() => {
+              const savedData = localStorage.getItem('tycoonSave');
+              if (savedData) {
+                  try {
+                      const parsed = JSON.parse(savedData);
+                      if (parsed.moneyTL) setMoneyTL(parsed.moneyTL);
+                      if (parsed.moneyUSD) setMoneyUSD(parsed.moneyUSD);
+                      if (parsed.businesses) setBusinesses(prev => {
+                          return prev.map(biz => {
+                              const savedBiz = parsed.businesses.find(b => b.id === biz.id);
+                              // JSX ikonunu korumak önemli
+                              return savedBiz ? { ...biz, ...savedBiz, icon: biz.icon } : biz;
+                          });
+                      });
+                      if (parsed.estates) setEstates(parsed.estates);
+                      if (parsed.garage) setGarage(parsed.garage);
+                      if (parsed.assets) setAssets(parsed.assets);
+                  } catch (e) {
+                      console.error("Save dosyası bozuk", e);
+                  }
+              }
+          }, []);
+
+          useEffect(() => {
+            const saveInterval = setInterval(() => {
+                const saveData = {
+                    moneyTL, moneyUSD, 
+                    // İkonu JSON'a kaydetmemek için ayırıyoruz
+                    businesses: businesses.map(({icon, ...rest}) => rest), 
+                    estates, garage, assets
+                };
+                localStorage.setItem('tycoonSave', JSON.stringify(saveData));
+            }, 10000);
+            return () => clearInterval(saveInterval);
+          }, [moneyTL, moneyUSD, businesses, estates, garage, assets]);
+          // --- OYUN DÖNGÜLERİ ---
+          useEffect(() => {
+            const clockTimer = setInterval(() => setTime(new Date()), 1000);
+            return () => clearInterval(clockTimer);
+          }, []);
+
+          useEffect(() => {
+            const saleTimer = setInterval(() => {
+                setGarage(currentGarage => {
+                    let updated = false;
+                    const nextGarage = currentGarage.map(car => {
+                        if (car.status === 'selling') {
+                            const ratio = car.sellPrice / car.marketValue;
+                            let chance = 0.08 / Math.pow(ratio, 3); 
+                            if (ratio < 0.8) chance = 0.9;
+
+                            if (Math.random() < chance) {
+                                updated = true;
+                                if (car.currency === 'TL') {
+                                    setMoneyTL(prev => prev + car.sellPrice);
+                                    addNotification(`Satıldı: ${car.name} (${formatTL(car.sellPrice)})`);
+                                } else {
+                                    setMoneyUSD(prev => prev + car.sellPrice);
+                                    addNotification(`Satıldı: ${car.name} (${formatUSD(car.sellPrice)})`);
+                                }
+                                return null; 
+                            }
+                        }
+                        return car;
+                    }).filter(Boolean);
+
+                    return updated ? nextGarage : currentGarage;
+                });
+            }, 1000);
+            return () => clearInterval(saleTimer);
+          }, []);
+
+          useEffect(() => {
+            const timer = setInterval(() => {
+              const now = Date.now();
+              const delta = (now - lastTick) / 1000;
+              if (delta >= 1) {
+                let incomeTL = 0;
+                let incomeUSD = 0;
+                businesses.forEach(biz => {
+                  const m = biz.hasManager ? 1.5 : 1;
+                  const l = Math.pow(2, biz.level - 1);
+                  const val = biz.count * biz.income * m * l;
+                  if (biz.currency === 'TL') incomeTL += val; else incomeUSD += val;
+                });
+                estates.forEach(est => {
+                    const val = est.count * est.income;
+                    if (est.currency === 'TL') incomeTL += val; else incomeUSD += val;
+                });
+                if (incomeTL > 0) setMoneyTL(prev => prev + incomeTL);
+                if (incomeUSD > 0) setMoneyUSD(prev => prev + incomeUSD);
+                setLastTick(now);
+              }
+            }, 100);
+            return () => clearInterval(timer);
+          }, [businesses, estates, lastTick]);
+
+          useEffect(() => {
+            const marketTimer = setInterval(() => {
+              setExchangeRate(prev => {
+                const change = (Math.random() - 0.5) * 0.1;
+                let newRate = prev + change;
+                if (newRate < 33.50) newRate = 33.50 + Math.random() * 0.2;
+                if (newRate > 35.50) newRate = 35.50 - Math.random() * 0.2;
+                return parseFloat(newRate.toFixed(4));
+              });
+
+              setAssets(prevAssets => prevAssets.map(asset => {
+                const changePercent = (Math.random() * asset.volatility * 2) - asset.volatility; 
+                const marketTrend = 0.001; 
+                let newPrice = asset.price * (1 + changePercent + marketTrend);
+                newPrice = Math.max(0.1, parseFloat(newPrice.toFixed(2)));
+                const newHistory = [...asset.history, newPrice];
+                if (newHistory.length > 50) newHistory.shift();
+                return { ...asset, price: newPrice, change: changePercent + marketTrend, history: newHistory };
+              }));
+            }, 3000); 
+            return () => clearInterval(marketTimer);
+          }, []);
+
+          // --- YARDIMCI FONKSİYONLAR ---
+          const formatTL = (amount) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+          const formatUSD = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount);
+          const formatTime = (date) => date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const addNotification = (msg) => {
+              const id = Date.now() + Math.random();
+              setNotifications(prev => [...prev, { id, msg }]);
+              setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 3000);
+          };
+          const getIncomeDisplay = (biz) => {
+             const managerMultiplier = biz.hasManager ? 1.5 : 1;
+             const levelMultiplier = Math.pow(2, biz.level - 1);
+             const val = biz.income * managerMultiplier * levelMultiplier;
+             return biz.currency === 'TL' ? formatTL(val) : formatUSD(val);
+          }
+
+          // --- TIKLAMA YÖNETİMİ ---
+          const handleClick = (e) => {
+            if (Date.now() - lastTouchTimeRef.current < 500) return; 
+            setMoneyTL(prev => prev + clickValueTL);
+            createFloatingText(e.clientX, e.clientY, `+${clickValueTL} ₺`);
+          };
+
+          const handleTouchStart = (e) => {
+            lastTouchTimeRef.current = Date.now();
+            if (e.touches.length >= 2) {
+              const bonusAmount = clickValueTL * 5;
+              setMoneyTL(prev => prev + bonusAmount);
+              const touch = e.touches[e.touches.length - 1];
+              createFloatingText(touch.clientX, touch.clientY, `KOMBO! +${bonusAmount} ₺`, 'gold');
+              setComboActive(true);
+              setTimeout(() => setComboActive(false), 200); 
+            } else {
+               const touch = e.touches[0];
+               setMoneyTL(prev => prev + clickValueTL);
+               createFloatingText(touch.clientX, touch.clientY, `+${clickValueTL} ₺`);
+            }
+          };
+
+          const createFloatingText = (x, y, text, color = '#4ade80') => {
+            const el = document.createElement('div');
+            el.innerText = text;
+            el.className = 'floating-text';
+            el.style.left = `${x}px`;
+            el.style.top = `${y - 40}px`;
+            el.style.color = color;
+            el.style.fontSize = color === 'gold' ? '1.5rem' : '1.2rem';
+            el.style.textShadow = color === 'gold' ? '0 0 10px rgba(255,215,0,0.8)' : 'none';
+            el.style.zIndex = '100';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+          };
+
+          // --- ALIM/SATIM FONKSİYONLARI ---
+          const buyUSD = (amountUSD) => {
+            const costTL = amountUSD * exchangeRate;
+            if (moneyTL >= costTL) { setMoneyTL(prev => prev - costTL); setMoneyUSD(prev => prev + amountUSD); }
+          };
+
+          const buyBusiness = (id) => {
+            const biz = businesses.find(b => b.id === id);
+            const cost = Math.floor(biz.baseCost * Math.pow(1.15, biz.count));
+            if (biz.currency === 'TL') {
+                if (moneyTL >= cost) { setMoneyTL(prev => prev - cost); setBusinesses(prev => prev.map(b => b.id === id ? { ...b, count: b.count + 1 } : b)); }
+            } else {
+                if (moneyUSD >= cost) { setMoneyUSD(prev => prev - cost); setBusinesses(prev => prev.map(b => b.id === id ? { ...b, count: b.count + 1 } : b)); }
+            }
+          };
+
+          const buyCar = (carId) => {
+              const car = CAR_CATALOG.find(c => c.id === carId);
+              if (car.currency === 'TL') {
+                  if (moneyTL >= car.marketValue) { setMoneyTL(prev => prev - car.marketValue); addCarToGarage(car); }
+              } else {
+                  if (moneyUSD >= car.marketValue) { setMoneyUSD(prev => prev - car.marketValue); addCarToGarage(car); }
+              }
+          };
+
+          const addCarToGarage = (carTemplate) => {
+              const newCar = { uniqueId: Date.now() + Math.random(), ...carTemplate, boughtPrice: carTemplate.marketValue, status: 'garage', sellPrice: 0 };
+              setGarage(prev => [newCar, ...prev]);
+              addNotification(`${newCar.name} garaja eklendi.`);
+          };
+
+          const buyEstate = (id) => {
+              const est = estates.find(e => e.id === id);
+              const cost = Math.floor(est.cost * Math.pow(1.2, est.count));
+              if (est.currency === 'TL') {
+                  if (moneyTL >= cost) { setMoneyTL(prev => prev - cost); setEstates(prev => prev.map(e => e.id === id ? {...e, count: e.count + 1} : e)); }
+              } else {
+                  if (moneyUSD >= cost) { setMoneyUSD(prev => prev - cost); setEstates(prev => prev.map(e => e.id === id ? {...e, count: e.count + 1} : e)); }
+              }
+          };
+
+          const buyAsset = (id) => {
+            const asset = assets.find(a => a.id === id);
+            if (moneyUSD >= asset.price) {
+              setMoneyUSD(prev => prev - asset.price);
+              setAssets(prev => prev.map(a => a.id === id ? { ...a, owned: a.owned + 1 } : a));
+            }
+          };
+
+          const sellAsset = (id) => {
+            const asset = assets.find(a => a.id === id);
+            if (asset.owned > 0) {
+              setMoneyUSD(prev => prev + asset.price);
+              setAssets(prev => prev.map(a => a.id === id ? { ...a, owned: a.owned - 1 } : a));
+            }
+          };
+
+          const hireManager = (id) => {
+            const biz = businesses.find(b => b.id === id);
+            if (biz.hasManager) return;
+            const currentMoney = biz.currency === 'TL' ? moneyTL : moneyUSD;
+            if (currentMoney >= biz.managerCost) {
+                if (biz.currency === 'TL') setMoneyTL(prev => prev - biz.managerCost); else setMoneyUSD(prev => prev - biz.managerCost);
+                setBusinesses(prev => prev.map(b => b.id === id ? { ...b, hasManager: true } : b));
+            }
+          }
+
+          const upgradeBusiness = (id) => {
+            const biz = businesses.find(b => b.id === id);
+            const cost = Math.floor(biz.upgradeCost * Math.pow(2.5, biz.level - 1));
+            const currentMoney = biz.currency === 'TL' ? moneyTL : moneyUSD;
+            if (currentMoney >= cost) {
+                if (biz.currency === 'TL') setMoneyTL(prev => prev - cost); else setMoneyUSD(prev => prev - cost);
+                setBusinesses(prev => prev.map(b => b.id === id ? { ...b, level: b.level + 1 } : b));
+            }
+          }
+
+          const openSellModal = (car) => { setSelectedCarForSale(car); setSellInputPrice(car.marketValue); };
+          const confirmSell = () => {
+              if (!selectedCarForSale) return;
+              const price = parseFloat(sellInputPrice);
+              if (isNaN(price) || price <= 0) return;
+              setGarage(prev => prev.map(car => car.uniqueId === selectedCarForSale.uniqueId ? { ...car, status: 'selling', sellPrice: price } : car));
+              setSelectedCarForSale(null);
+              addNotification(`${selectedCarForSale.name} satışa çıkarıldı.`);
+          };
+          const cancelSell = (uniqueId) => { setGarage(prev => prev.map(car => car.uniqueId === uniqueId ? { ...car, status: 'garage', sellPrice: 0 } : car)); };
+
+          const manualSave = () => {
+            const saveData = {
+                moneyTL, moneyUSD, 
+                businesses: businesses.map(({icon, ...rest}) => rest), 
+                estates, garage, assets
+            };
+            localStorage.setItem('tycoonSave', JSON.stringify(saveData));
+            addNotification("Oyun manuel olarak kaydedildi!");
+          };
+
+          // --- GRAFİK RENDER ---
+          const renderChart = (assetId) => {
+            const asset = assets.find(a => a.id === assetId);
+            if (!asset || asset.history.length < 2) return null;
+            const history = asset.history;
+            const min = Math.min(...history);
+            const max = Math.max(...history);
+            const range = max - min || 1; 
+            const width = 600;
+            const height = 150;
+            const points = history.map((price, index) => {
+                const x = (index / (history.length - 1)) * width;
+                const y = height - ((price - min) / range) * height; 
+                return `${x},${y}`;
+            }).join(' ');
+            const isGoingUp = history[history.length - 1] >= history[0];
+            const color = isGoingUp ? '#4ade80' : '#f87171'; 
+
+            return (
+                <div className="w-full bg-slate-800 rounded-xl p-4 mb-4 border border-slate-700 shadow-inner relative overflow-hidden animate-in fade-in">
+                    <div className="flex justify-between items-center mb-2 z-10 relative">
+                        <div className="flex items-center gap-2">
+                            {asset.type === 'crypto' && <Bitcoin className="text-orange-500" />}
+                            {asset.type === 'stock' && <Activity className="text-blue-500" />}
+                            {asset.type === 'commodity' && <Gem className="text-yellow-500" />}
+                            <div><h3 className="font-bold text-white text-lg">{asset.name} (USD)</h3></div>
+                        </div>
+                        <div className={`text-2xl font-mono font-bold ${isGoingUp ? 'text-green-400' : 'text-red-400'}`}>{formatUSD(asset.price)}</div>
+                    </div>
+                    <svg viewBox={`0 -10 ${width} ${height + 20}`} className="w-full h-32 overflow-visible">
+                        <polyline fill="none" stroke={color} strokeWidth="3" points={points} strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-lg" />
+                        <polygon fill={color} fillOpacity="0.1" points={`0,${height} ${points} ${width},${height}`} />
+                    </svg>
+                </div>
+            );
+          };
+
+          return (
+            <div className="flex flex-col h-screen bg-slate-900 text-white font-sans overflow-hidden select-none relative touch-manipulation">
+              {/* NOTIFICATIONS */}
+              <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+                  {notifications.map(n => (<div key={n.id} className="bg-green-600/90 text-white px-4 py-2 rounded shadow-lg notification-toast text-sm font-bold flex items-center gap-2"><CheckCircle size={16}/> {n.msg}</div>))}
+              </div>
+
+              {/* HEADER */}
+              <div className="bg-slate-800 p-2 shadow-xl border-b border-slate-700 z-10 flex-none">
+                <div className="flex justify-between items-center px-2 mb-2 text-xs md:text-sm border-b border-slate-700/50 pb-1">
+                    <div className="flex items-center gap-2 text-yellow-400 font-mono"><span className="bg-slate-700 px-1 rounded">USD/TRY</span><span className="font-bold text-lg">{exchangeRate.toFixed(4)}</span><span className="animate-pulse text-[10px] text-slate-400">● Canlı</span></div>
+                    <div className="flex items-center gap-4">
+                        <button onClick={manualSave} className="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs bg-slate-700/50 px-2 py-1 rounded"><Save size={14} /> Kaydet</button>
+                        <div className="flex items-center gap-2 text-slate-300 bg-slate-700/50 px-2 py-0.5 rounded-full"><Clock size={14} /><span className="font-mono">{formatTime(time)}</span></div>
+                    </div>
+                </div>
+                <div className="flex justify-between items-center px-2">
+                    <div className="flex flex-col"><span className="text-slate-400 text-[10px] uppercase">Nakit (TL)</span><span className="text-xl md:text-2xl font-bold text-white font-mono tracking-tight">{formatTL(moneyTL)}</span></div>
+                    <div className="h-8 w-px bg-slate-600 mx-2"></div>
+                    <div className="flex flex-col text-right"><span className="text-slate-400 text-[10px] uppercase">Döviz ($)</span><span className="text-xl md:text-2xl font-bold text-green-400 font-mono tracking-tight">{formatUSD(moneyUSD)}</span></div>
+                </div>
+              </div>
+
+              {/* MAIN CONTENT */}
+              <div className="flex-1 overflow-y-auto bg-slate-900 p-4 pb-24 scroll-smooth">
+                <div className="max-w-4xl mx-auto">
+                  
+                  {/* CLICKER */}
+                  {activeTab === 'clicker' && (
+                    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 animate-in fade-in duration-500">
+                       <div className={`w-64 h-64 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(220,38,38,0.4)] cursor-pointer border-4 border-red-400 relative group overflow-hidden select-none ${comboActive ? 'combo-pulse border-yellow-400' : 'active:scale-95 transition-all hover:scale-105'}`} onTouchStart={handleTouchStart} onClick={handleClick} style={{ touchAction: 'manipulation' }}>
+                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                        <div className="text-center z-10 pointer-events-none"><span className="text-6xl font-bold block text-white drop-shadow-md mb-2">₺</span><span className={`text-2xl font-bold block drop-shadow-md tracking-wider ${comboActive ? 'text-yellow-300 scale-110' : 'text-white'}`}>{comboActive ? 'KOMBO!' : 'TIKLA'}</span><div className="text-[10px] text-red-200 mt-2 opacity-80 border border-red-400/50 rounded-full px-2 py-1 bg-black/20">2 PARMAK: 5x BONUS</div></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+                         <div className="col-span-2 bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-around">
+                            <div className="text-center"><div className="text-slate-400 text-[10px] uppercase">TL Gelir</div><div className="text-white font-bold font-mono">
+                                {formatTL(businesses.filter(b => b.currency === 'TL').reduce((acc, biz) => acc + (biz.income * biz.count * (biz.hasManager?1.5:1) * Math.pow(2, biz.level-1)), 0) + estates.filter(l => l.currency === 'TL').reduce((acc, lux) => acc + (lux.income * lux.count), 0))}/sn
+                            </div></div>
+                            <div className="w-px bg-slate-700"></div>
+                            <div className="text-center"><div className="text-slate-400 text-[10px] uppercase">Dolar Gelir</div><div className="text-green-400 font-bold font-mono">
+                                 {formatUSD(businesses.filter(b => b.currency === 'USD').reduce((acc, biz) => acc + (biz.income * biz.count * (biz.hasManager?1.5:1) * Math.pow(2, biz.level-1)), 0) + estates.filter(l => l.currency === 'USD').reduce((acc, lux) => acc + (lux.income * lux.count), 0))}/sn
+                            </div></div>
+                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BUSINESS */}
+                  {activeTab === 'business' && (
+                    <div className="space-y-4 animate-in slide-in-from-right-10 duration-300">
+                      {businesses.map(biz => {
+                        const cost = Math.floor(biz.baseCost * Math.pow(1.15, biz.count));
+                        const isTL = biz.currency === 'TL';
+                        const canAfford = isTL ? moneyTL >= cost : moneyUSD >= cost;
+                        return (
+                          <div key={biz.id} className={`bg-slate-800 p-3 rounded-xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 border ${isTL ? 'border-red-900/30' : 'border-blue-900/30'}`}>
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-inner border relative text-xl ${isTL ? 'bg-slate-800 border-red-500/20' : 'bg-slate-800 border-blue-500/20'}`}>{biz.icon}</div>
+                              <div><div className="font-bold text-base leading-tight">{biz.name}</div><div className={`text-xs font-mono ${isTL ? 'text-slate-300' : 'text-green-400'}`}>+{getIncomeDisplay(biz)} / adet</div><div className="text-[10px] text-slate-500 mt-0.5">Sahip: {biz.count}</div></div>
+                            </div>
+                            <div className="flex items-center gap-2 justify-end w-full sm:w-auto mt-2 sm:mt-0">
+                                <button onClick={() => setSelectedBusinessId(biz.id)} className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-lg font-bold text-xs flex flex-col items-center border border-slate-600 min-w-[50px]"><span>YÖNET</span></button>
+                                <button onClick={() => buyBusiness(biz.id)} disabled={!canAfford} className={`flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all active:scale-95 min-w-[100px] border-b-4 flex flex-col items-center ${canAfford ? (isTL ? 'bg-red-600 hover:bg-red-500 border-red-800 text-white' : 'bg-blue-600 hover:bg-blue-500 border-blue-800 text-white') : 'bg-slate-700 text-slate-500 border-slate-800 cursor-not-allowed'}`}><span>SATIN AL</span><span className="font-mono opacity-90 text-[10px]">{isTL ? formatTL(cost) : formatUSD(cost)}</span></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* GALERİ (KİLİTLİ OLABİLİR) */}
+                  {activeTab === 'gallery' && (
+                      <div className="space-y-4 animate-in slide-in-from-right-10 duration-300">
+                          <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 mb-4 sticky top-0 z-20 backdrop-blur-md bg-slate-800/90">
+                              <button onClick={() => setGalleryTab('dealer')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md font-bold transition-all ${galleryTab === 'dealer' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}><Store size={16} /> Vitrin</button>
+                              <button onClick={() => setGalleryTab('garage')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md font-bold transition-all ${galleryTab === 'garage' ? 'bg-yellow-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}><Key size={16} /> Garajım ({garage.length})</button>
+                          </div>
+
+                          {galleryTab === 'dealer' && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {CAR_CATALOG.map(car => {
+                                      const isTL = car.currency === 'TL';
+                                      const canAfford = isTL ? moneyTL >= car.marketValue : moneyUSD >= car.marketValue;
+                                      return (
+                                          <div key={car.id} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                                              <div className="flex items-center gap-3"><div className="text-3xl">{car.icon}</div><div><div className="font-bold text-sm">{car.name}</div><div className={`text-xs ${isTL ? 'text-slate-400' : 'text-green-400'}`}>{isTL ? formatTL(car.marketValue) : formatUSD(car.marketValue)}</div></div></div>
+                                              <button onClick={() => buyCar(car.id)} disabled={!canAfford} className={`px-3 py-1.5 rounded text-xs font-bold ${canAfford ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-500'}`}>SATIN AL</button>
+                                          </div>
+                                      )
+                                  })}
+                              </div>
+                          )}
+
+                          {galleryTab === 'garage' && (
+                              <div className="space-y-3">
+                                  {garage.length === 0 && <div className="text-center text-slate-500 py-10">Garajın boş. Vitrinden araba alıp kârına satabilirsin.</div>}
+                                  {garage.map(car => (
+                                      <div key={car.uniqueId} className={`bg-slate-800 p-4 rounded-xl border ${car.status === 'selling' ? 'border-yellow-500 bg-yellow-500/10' : 'border-slate-700'} flex justify-between items-center`}>
+                                          <div className="flex items-center gap-4"><div className="text-3xl">{car.icon}</div><div><h3 className="font-bold text-white">{car.name}</h3><div className="text-xs text-slate-400">Piyasa: {car.currency === 'TL' ? formatTL(car.marketValue) : formatUSD(car.marketValue)}</div>{car.status === 'selling' && <div className="text-yellow-400 text-xs font-bold mt-1 animate-pulse">🔥 Vitrinde: {car.currency === 'TL' ? formatTL(car.sellPrice) : formatUSD(car.sellPrice)}</div>}</div></div>
+                                          <div>
+                                              {car.status === 'garage' ? <button onClick={() => openSellModal(car)} className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-xs">İLANA KOY</button> : <button onClick={() => cancelSell(car.uniqueId)} className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-xs">İPTAL ET</button>}
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          )}
+                      </div>
+                  )}
+
+                  {/* REAL ESTATE (EMLAK) */}
+                  {activeTab === 'realestate' && (
+                      <div className="space-y-4 animate-in slide-in-from-right-10 duration-300">
+                          <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-green-400"><MapPin /> Emlak Piyasası</h2>
+                          {estates.map(est => {
+                              const cost = Math.floor(est.cost * Math.pow(1.2, est.count));
+                              const isTL = est.currency === 'TL';
+                              const canAfford = isTL ? moneyTL >= cost : moneyUSD >= cost;
+                              return (
+                                  <div key={est.id} className="bg-slate-800 p-4 rounded-xl shadow border border-slate-700 flex justify-between items-center mb-3">
+                                      <div className="flex items-center gap-3"><div className="text-2xl">{est.icon}</div><div><div className="font-bold">{est.name}</div><div className="text-xs text-green-400">+{isTL ? formatTL(est.income) : formatUSD(est.income)} / kira</div></div></div>
+                                      <div className="text-right"><div className="text-xs text-slate-500 mb-1">Sahip: {est.count}</div><button onClick={() => buyEstate(est.id)} disabled={!canAfford} className={`px-3 py-1.5 rounded text-xs font-bold ${canAfford ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-500'}`}>AL ({isTL ? formatTL(cost) : formatUSD(cost)})</button></div>
+                                  </div>
+                              );
+                          })}
+                      </div>
+                  )}
+
+                  {/* MARKET (BORSA) */}
+                  {activeTab === 'market' && (
+                     <div className="space-y-4 animate-in slide-in-from-right-10 duration-300">
+                         
+                         <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 overflow-x-auto mb-4">
+                            {[
+                                { id: 'exchange', label: 'Döviz', icon: ArrowRightLeft },
+                                { id: 'crypto', label: 'Kripto', icon: Bitcoin },
+                                { id: 'stock', label: 'Hisse', icon: Activity },
+                                { id: 'commodity', label: 'Emtia', icon: Gem },
+                            ].map(tab => (
+                                <button key={tab.id} onClick={() => { setMarketTab(tab.id); setSelectedAssetId(null); }} className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-bold transition-all whitespace-nowrap ${marketTab === tab.id ? 'bg-slate-600 text-white shadow' : 'text-slate-400 hover:bg-slate-700/50'}`}><tab.icon size={16} /> {tab.label}</button>
+                            ))}
+                         </div>
+
+                         {marketTab === 'exchange' && (
+                             <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-yellow-400"><Store /> Döviz Bürosu</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                                    <div className="space-y-2"><div className="text-sm text-slate-400">Güncel Kur</div><div className="text-3xl font-bold font-mono text-white">1 $ = <span className="text-yellow-400">{exchangeRate.toFixed(4)} ₺</span></div></div>
+                                    <div className="space-y-3 bg-slate-900/50 p-4 rounded-lg">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => buyUSD(1000)} disabled={moneyTL < 1000 * exchangeRate} className="bg-green-600 hover:bg-green-500 disabled:bg-slate-700 text-white py-2 rounded font-mono text-xs">1.000 $ Al</button>
+                                            <button onClick={() => buyUSD(10000)} disabled={moneyTL < 10000 * exchangeRate} className="bg-green-600 hover:bg-green-500 disabled:bg-slate-700 text-white py-2 rounded font-mono text-xs">10.000 $ Al</button>
+                                        </div>
+                                    </div>
+                                </div>
+                             </div>
+                         )}
+
+                         {marketTab !== 'exchange' && (
+                            <>
+                                {selectedAssetId && renderChart(selectedAssetId)}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {assets.filter(a => a.type === marketTab).map(asset => {
+                                    const isUp = asset.change >= 0;
+                                    const canBuy = moneyUSD >= asset.price;
+                                    const canSell = asset.owned > 0;
+                                    const isSelected = selectedAssetId === asset.id;
+                                    return (
+                                        <div key={asset.id} onClick={() => setSelectedAssetId(asset.id)} className={`bg-slate-800 p-4 rounded-xl border transition-all cursor-pointer relative overflow-hidden group ${isSelected ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-slate-700 hover:border-slate-600'}`}>
+                                        {isSelected && <div className="absolute top-0 right-0 w-3 h-3 bg-blue-500 rounded-bl-lg"></div>}
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div><div className="font-bold text-lg text-white group-hover:text-blue-300 transition-colors">{asset.name}</div><div className="text-xs text-slate-500 font-mono tracking-wider">{asset.id}</div></div>
+                                            <div className={`text-right ${isUp ? 'text-green-400' : 'text-red-400'}`}><div className="text-xl font-bold font-mono">{formatUSD(asset.price)}</div><div className="text-xs flex justify-end items-center">{isUp ? <TrendingUp size={12} className="mr-1"/> : <TrendingDown size={12} className="mr-1"/>}{(asset.change * 100).toFixed(2)}%</div></div>
+                                        </div>
+                                        <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg mb-4 border border-slate-700/50"><span className="text-xs text-slate-400">Portföy:</span><span className="font-mono font-bold text-blue-300">{asset.owned} Lot</span></div>
+                                        <div className="grid grid-cols-2 gap-3" onClick={(e) => e.stopPropagation()}>
+                                            <button onClick={() => buyAsset(asset.id)} disabled={!canBuy} className={`py-2 rounded-lg font-bold text-sm transition-colors ${canBuy ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-slate-700 text-slate-500'}`}>AL ($)</button>
+                                            <button onClick={() => sellAsset(asset.id)} disabled={!canSell} className={`py-2 rounded-lg font-bold text-sm transition-colors ${canSell ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-slate-700 text-slate-500'}`}>SAT ($)</button>
+                                        </div>
+                                        </div>
+                                    );
+                                    })}
+                                </div>
+                            </>
+                         )}
+                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* FOOTER NAV */}
+              <div className="bg-slate-800 border-t border-slate-700 p-2 pb-6 md:pb-2 shadow-[0_-5px_30px_rgba(0,0,0,0.5)] z-20">
+                <div className="max-w-4xl mx-auto flex justify-around">
+                  {[
+                    { id: 'clicker', icon: LayoutDashboard, label: 'Merkez' },
+                    { id: 'business', icon: Briefcase, label: 'İşletme' },
+                    { id: 'gallery', icon: isGalleryUnlocked ? Car : Lock, label: 'Galeri', locked: !isGalleryUnlocked },
+                    { id: 'realestate', icon: Home, label: 'Emlak' },
+                    { id: 'market', icon: Globe, label: 'Borsa' }
+                  ].map(tab => (
+                    <button 
+                        key={tab.id} 
+                        onClick={() => {
+                            if (tab.locked) {
+                                addNotification("Galeri'yi açmak için 'Oto Galeri' satın almalısın!");
+                                return;
+                            }
+                            setActiveTab(tab.id);
+                        }} 
+                        className={`flex flex-col items-center gap-1.5 py-2 px-2 rounded-xl transition-all duration-300 ${activeTab === tab.id ? 'text-white bg-blue-600 shadow-lg translate-y-[-5px]' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/50'} ${tab.locked ? 'opacity-50 grayscale' : ''}`}
+                    >
+                        <tab.icon size={20} />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* MODALS */}
+              {selectedCarForSale && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+                      <div className="bg-slate-800 w-full max-w-sm rounded-2xl border border-slate-600 p-5 space-y-4">
+                          <div className="flex justify-between items-center border-b border-slate-700 pb-2"><h3 className="font-bold text-lg">Satış Fiyatı Belirle</h3><button onClick={() => setSelectedCarForSale(null)}><X className="text-slate-400"/></button></div>
+                          <div className="text-center py-2"><div className="text-4xl mb-2">{selectedCarForSale.icon}</div><div className="font-bold text-xl">{selectedCarForSale.name}</div><div className="text-sm text-slate-400">Piyasa Değeri: <span className="text-white font-mono">{selectedCarForSale.currency === 'TL' ? formatTL(selectedCarForSale.marketValue) : formatUSD(selectedCarForSale.marketValue)}</span></div></div>
+                          <div className="bg-slate-700/50 p-3 rounded-lg border border-slate-600"><label className="text-xs text-slate-400 block mb-1">Satış Fiyatı ({selectedCarForSale.currency})</label><input type="number" value={sellInputPrice} onChange={(e) => setSellInputPrice(e.target.value)} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white font-mono text-lg focus:outline-none focus:border-blue-500"/><div className="mt-2 text-xs flex gap-1 items-start"><AlertCircle size={14} className="text-blue-400 mt-0.5 shrink-0"/><span className="text-slate-400">Düşük fiyat = Hızlı satış.<br/>Yüksek fiyat = Yavaş satış (veya hiç satılmama).</span></div></div>
+                          <button onClick={confirmSell} className="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold shadow-lg">SATIŞA BAŞLA</button>
+                      </div>
+                  </div>
+              )}
+
+              {selectedBusinessId && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+                      <div className="bg-slate-800 w-full max-w-md rounded-2xl border border-slate-600 p-5 space-y-4">
+                          {(() => {
+                              const biz = businesses.find(b => b.id === selectedBusinessId);
+                              if (!biz) return null; 
+                              const currentUpgradeCost = Math.floor(biz.upgradeCost * Math.pow(2.5, biz.level - 1));
+                              const isTL = biz.currency === 'TL';
+                              const currentMoney = isTL ? moneyTL : moneyUSD;
+                              const formatFunc = isTL ? formatTL : formatUSD;
+                              return (
+                                  <>
+                                      <div className="flex justify-between items-center border-b border-slate-700 pb-2"><h3 className="font-bold text-lg">{biz.name} Yönetimi</h3><button onClick={() => setSelectedBusinessId(null)}><X className="text-slate-400"/></button></div>
+                                      <div className="space-y-4">
+                                          <div className={`p-4 rounded border ${isTL ? 'bg-red-900/20 border-red-900/40' : 'bg-blue-900/20 border-blue-900/40'}`}><p className="text-sm font-bold mb-2">Müdür Atama (Gelir +%50)</p>{biz.hasManager ? <div className="text-green-400 font-bold flex gap-2"><ShieldCheck/> Müdür Atandı</div> : <button onClick={() => hireManager(biz.id)} disabled={currentMoney < biz.managerCost} className={`w-full py-2 rounded font-bold ${currentMoney >= biz.managerCost ? 'bg-green-600' : 'bg-slate-700 text-slate-500'}`}>Kirala: {formatFunc(biz.managerCost)}</button>}</div>
+                                          <div className="p-4 rounded bg-slate-700/30 border border-slate-600"><p className="text-sm font-bold mb-2">Teknoloji Seviyesi {biz.level} (Gelir x2)</p><button onClick={() => upgradeBusiness(biz.id)} disabled={currentMoney < currentUpgradeCost} className={`w-full py-2 rounded font-bold ${currentMoney >= currentUpgradeCost ? 'bg-blue-600' : 'bg-slate-700 text-slate-500'}`}>Yükselt: {formatFunc(currentUpgradeCost)}</button></div>
+                                      </div>
+                                  </>
+                              )
+                          })()}
+                      </div>
+                  </div>
+              )}
+            </div>
+          );
+        }
+
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const root = createRoot(rootElement);
+            root.render(
+                <StrictMode>
+                    <EmpireTycoonLocked />
+                </StrictMode>
+            );
+        } else {
+            console.error("HATA: 'root' elementi bulunamadı. HTML'i kontrol et.");
+        }
+    </script>
+</body>
+</html>
