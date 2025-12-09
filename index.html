@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Empire Tycoon - Hazır</title>
+    <title>Empire Tycoon - Final Versiyon</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -11,19 +11,40 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
-        /* Bu stiller, önceki style.css dosyasından alınmıştır. */
+        /* Ana CSS stilleri */
         body { margin: 0; padding: 0; background-color: #0f172a; color: white; }
-        .floating-text { position: absolute; font-weight: bold; pointer-events: none; animation: floatUp 0.8s ease-out forwards; z-index: 100; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
-        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(1.5); opacity: 0; } }
+        .floating-text { 
+            position: absolute; 
+            font-weight: bold; 
+            pointer-events: none; 
+            animation: floatUp 0.8s ease-out forwards; 
+            z-index: 100; 
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); 
+        }
+        @keyframes floatUp { 
+            0% { transform: translateY(0) scale(1); opacity: 1; } 
+            100% { transform: translateY(-80px) scale(1.5); opacity: 0; } 
+        }
         .combo-pulse { animation: pulseRed 0.2s ease-in-out; }
-        @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); transform: scale(1); } 50% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0); transform: scale(1.05); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); } }
+        @keyframes pulseRed { 
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); transform: scale(1); } 
+            50% { box-shadow: 0 0 20px 10px rgba(239, 68, 68, 0); transform: scale(1.05); } 
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); } 
+        }
         .notification-toast { animation: slideInRight 0.3s ease-out; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideInRight { 
+            from { transform: translateX(100%); opacity: 0; } 
+            to { transform: translateX(0); opacity: 1; } 
+        }
         /* Scrollbar Düzenlemesi */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        /* Mobil dokunma optimizasyonu */
+        .touch-manipulation {
+            touch-action: manipulation;
+        }
     </style>
 </head>
 <body>
@@ -34,8 +55,8 @@
         const { useState, useEffect, useRef, StrictMode } = React;
         const { createRoot } = ReactDOM;
 
-        // --- İKON TANIMLAMA (HATA DÜZELTME) ---
-        // Lucide-React kütüphanesi yüklü olmadığı için, her ikonu temsil eden bir Mock bileşeni oluşturuyoruz.
+        // --- İKON TANIMLAMA (Lucide-React Mock) ---
+        // Tüm ikonlar için özel mock bileşenleri oluşturulmuştur.
         const createMockIcon = (prop, defaultVisual) => {
             const MockComponent = ({ size = 20, className = "" }) => {
                 let visualHint = defaultVisual; 
@@ -45,7 +66,6 @@
             return MockComponent;
         };
 
-        // Tüm ikonların tek tek mock bileşenlerini oluşturuyoruz
         const IconRegistry = {
             Coins: createMockIcon('Coins', '💰'),
             Briefcase: createMockIcon('Briefcase', '💼'),
@@ -79,28 +99,106 @@
             Trophy: createMockIcon('Trophy', '🏆'),
             Key: createMockIcon('Key', '🔑'),
             Home: createMockIcon('Home', '🏡'),
-            MapPin: createMockIcon('MapPin', '📍'), // Düzeltilen ikon
+            MapPin: createMockIcon('MapPin', '📍'),
             Tag: createMockIcon('Tag', '🏷️'),
             Percent: createMockIcon('Percent', '%'),
             AlertCircle: createMockIcon('AlertCircle', '⚠️'),
             CheckCircle: createMockIcon('CheckCircle', '✅'),
             Wallet: createMockIcon('Wallet', '💳'),
             Lock: createMockIcon('Lock', '🔒'),
-            Save: createMockIcon('Save', '💾')
+            Save: createMockIcon('Save', '💾'),
+            PieChart: createMockIcon('PieChart', '🥧')
         };
         
-        // Ikonları, React kodunun beklediği gibi destructure ediyoruz.
         const { 
             Coins, Briefcase, TrendingUp, TrendingDown, Building2, Zap, 
             LayoutDashboard, Rocket, Coffee, Car, Clapperboard, 
             Landmark, Fuel, Globe, UserCheck, ArrowUpCircle, X, ShieldCheck,
             Bitcoin, DollarSign, Gem, Activity, Clock, ArrowRightLeft, Store,
             Scissors, ShoppingBasket, Tv, HardHat, Trophy, Key, Home, MapPin,
-            Tag, Percent, AlertCircle, CheckCircle, Wallet, Lock, Save
+            Tag, Percent, AlertCircle, CheckCircle, Wallet, Lock, Save, PieChart
         } = IconRegistry;
 
 
-        // --- SABİT VERİLER (PERFORMANS İÇİN BİLEŞEN DIŞINA ALINDI) ---
+        // --- EMLAK SİSTEMİ İÇİN İLÇELER ---
+        const DISTRICTS = [
+            // Tier 1
+            { name: 'Arnavutköy', tier: 1 }, { name: 'Çatalca', tier: 1 }, { name: 'Esenyurt', tier: 1 },
+            { name: 'Sancaktepe', tier: 1 }, { name: 'Silivri', tier: 1 }, { name: 'Sultanbeyli', tier: 1 },
+            { name: 'Sultangazi', tier: 1 }, { name: 'Şile', tier: 1 }, 
+            // Tier 2
+            { name: 'Avcılar', tier: 2 }, { name: 'Bağcılar', tier: 2 }, { name: 'Bayrampaşa', tier: 2 },
+            { name: 'Beylikdüzü', tier: 2 }, { name: 'Büyükçekmece', tier: 2 }, { name: 'Çekmeköy', tier: 2 },
+            { name: 'Esenler', tier: 2 }, { name: 'Gaziosmanpaşa', tier: 2 }, { name: 'Güngören', tier: 2 },
+            { name: 'Kağıthane', tier: 2 }, { name: 'Kartal', tier: 2 }, { name: 'Küçükçekmece', tier: 2 },
+            { name: 'Pendik', tier: 2 }, { name: 'Tuzla', tier: 2 }, { name: 'Ümraniye', tier: 2 },
+            { name: 'Zeytinburnu', tier: 2 }, { name: 'Başakşehir', tier: 2 }, { name: 'Bahçelievler', tier: 2 },
+            { name: 'Eyüpsultan', tier: 2 }, { name: 'Maltepe', tier: 2 },
+            // Tier 3
+            { name: 'Ataşehir', tier: 3 }, { name: 'Bakırköy', tier: 3 }, { name: 'Beyoğlu', tier: 3 },
+            { name: 'Fatih', tier: 3 }, { name: 'Kadıköy', tier: 3 }, { name: 'Şişli', tier: 3 },
+            { name: 'Üsküdar', tier: 3 }, { name: 'Adalar', tier: 3 },
+            // Tier 4
+            { name: 'Beşiktaş', tier: 4 }, { name: 'Beykoz', tier: 4 }, { name: 'Sarıyer', tier: 4 }
+        ];
+
+        const generateEstates = (exchangeRate = 34.20) => {
+            let estates = [];
+            // Başlangıç Evi
+            estates.push({ id: 'start1', name: 'Öğrenci Evi (Genel)', cost: 1500000, income: 7500, currency: 'TL', count: 0, icon: '🏚️' });
+
+            DISTRICTS.forEach((d) => {
+                let basePrice = 2000000;
+                if (d.tier === 2) basePrice = 3500000;
+                if (d.tier === 3) basePrice = 8000000;
+                if (d.tier === 4) basePrice = 25000000;
+
+                // 1. Tip: Daire
+                estates.push({
+                    id: `est_${d.name}_1`, name: `${d.name} Daire`, cost: basePrice, income: Math.floor(basePrice / 250), currency: 'TL', count: 0, icon: '🏠'
+                });
+                
+                // 2. Tip: Mağaza
+                estates.push({
+                    id: `est_${d.name}_2`, name: `${d.name} Mağaza`, cost: basePrice * 3, income: Math.floor((basePrice * 3) / 240), currency: 'TL', count: 0, icon: '🏪'
+                });
+                
+                // 3. Tip: Lüks/Prestij
+                let luxuryName = 'Site Dairesi'; 
+                let luxuryIcon = '🏢';
+                if (d.tier >= 3) { luxuryName = 'Rezidans'; luxuryIcon = '🌇'; }
+                if (d.tier === 4) { luxuryName = 'Yalı/Köşk'; luxuryIcon = '🏰'; }
+                const isUSD = d.tier >= 4;
+
+                estates.push({
+                    id: `est_${d.name}_3`, 
+                    name: `${d.name} ${luxuryName}`, 
+                    cost: basePrice * 10, 
+                    income: Math.floor((basePrice * 10) / 220), 
+                    currency: isUSD ? 'USD' : 'TL', 
+                    count: 0, 
+                    icon: luxuryIcon
+                });
+            });
+            
+            // USD fiyatlarını başlangıç kuruyla düzeltiyoruz
+            return estates.map(e => {
+                if (e.currency === 'USD') {
+                    // Cost ve Income'u TL cinsinden girdiğimiz varsayımıyla USD'ye çeviriyoruz
+                    return { 
+                        ...e, 
+                        cost: Math.floor(e.cost / exchangeRate), 
+                        income: Math.floor(e.income / exchangeRate) 
+                    };
+                }
+                return e;
+            });
+        };
+
+        const INITIAL_ESTATES = generateEstates(34.20);
+
+
+        // --- DİĞER SABİT VERİLER ---
         const INITIAL_BUSINESSES = [
           { id: 1, name: 'Simit Tezgahı', baseCost: 500, income: 25, count: 0, icon: <div className="text-yellow-600 text-2xl">🥯</div>, category: 1, currency: 'TL', hasManager: false, managerCost: 2000, level: 1, upgradeCost: 5000 },
           { id: 101, name: 'Mahalle Bakkalı', baseCost: 1500, income: 80, count: 0, icon: <ShoppingBasket className="text-green-600" size={28} />, category: 1, currency: 'TL', hasManager: false, managerCost: 4000, level: 1, upgradeCost: 9000 },
@@ -130,18 +228,6 @@
             { id: 'car11', name: 'G-Wagon G63', marketValue: 800000, currency: 'USD', icon: '📦' },
             { id: 'car12', name: 'Lamborghini', marketValue: 1200000, currency: 'USD', icon: '🐂' },
             { id: 'car13', name: 'Bugatti Chiron', marketValue: 4000000, currency: 'USD', icon: '🚀' },
-        ];
-
-        const INITIAL_ESTATES = [
-            { id: 'est1', type: 'estate', name: 'Öğrenci Evi', cost: 1500000, income: 7500, currency: 'TL', count: 0, icon: '🏚️' },
-            { id: 'est2', type: 'estate', name: '1+1 Daire', cost: 3500000, income: 18000, currency: 'TL', count: 0, icon: '🏠' },
-            { id: 'est3', type: 'estate', name: 'Lüks Rezidans', cost: 15000000, income: 85000, currency: 'TL', count: 0, icon: '🏢' },
-            { id: 'est4', type: 'estate', name: 'Boğazda Yalı', cost: 25000000, income: 400000, currency: 'USD', count: 0, icon: '🏰' },
-            { id: 'ist1', type: 'estate', name: 'Çatalca Arsa', cost: 2000000, income: 8000, currency: 'TL', count: 0, icon: '🌾' },
-            { id: 'ist2', type: 'estate', name: 'Silivri Yazlık', cost: 2200000, income: 8500, currency: 'TL', count: 0, icon: '🌻' },
-            { id: 'ist3', type: 'estate', name: 'Şile Villa', cost: 2500000, income: 9000, currency: 'TL', count: 0, icon: '🌲' },
-            { id: 'ist34', type: 'estate', name: 'Kadıköy Dükkan', cost: 40000000, income: 140000, currency: 'TL', count: 0, icon: '🐂' },
-            { id: 'ist38', type: 'estate', name: 'Beşiktaş Plaza', cost: 100000000, income: 350000, currency: 'TL', count: 0, icon: '🦅' },
         ];
 
         const INITIAL_ASSETS = [
@@ -204,11 +290,25 @@
                               return savedBiz ? { ...biz, ...savedBiz, icon: biz.icon } : biz;
                           });
                       });
-                      if (parsed.estates) setEstates(parsed.estates);
+                      
+                      // Emlak yükleme mantığı: Sadece count'ları yükle, fiyatları/isimleri generateEstates'ten al.
+                      if (parsed.estates) {
+                            setEstates(prevEstates => {
+                                // generateEstates'in güncel listesini kullan (exchangeRate'i kullanıyoruz, ancak useState'den önce çalıştığı için statik 34.20)
+                                const currentEstates = generateEstates(34.20);
+                                return currentEstates.map(currentEst => {
+                                    const savedEst = parsed.estates.find(e => e.id === currentEst.id);
+                                    return savedEst ? { ...currentEst, count: savedEst.count } : currentEst;
+                                });
+                            });
+                      }
+
                       if (parsed.garage) setGarage(parsed.garage);
                       if (parsed.assets) setAssets(parsed.assets);
+                      addNotification("Oyun yüklendi!");
                   } catch (e) {
                       console.error("Save dosyası bozuk", e);
+                      addNotification("Hata: Kayıt dosyası yüklenemedi!");
                   }
               }
           }, []);
@@ -219,12 +319,15 @@
                     moneyTL, moneyUSD, 
                     // İkonu JSON'a kaydetmemek için ayırıyoruz
                     businesses: businesses.map(({icon, ...rest}) => rest), 
-                    estates, garage, assets
+                    // Emlak listesini sadece ID ve count ile sadeleştirerek kaydediyoruz
+                    estates: estates.map(e => ({ id: e.id, count: e.count })),
+                    garage, assets
                 };
                 localStorage.setItem('tycoonSave', JSON.stringify(saveData));
             }, 10000);
             return () => clearInterval(saveInterval);
           }, [moneyTL, moneyUSD, businesses, estates, garage, assets]);
+          
           // --- OYUN DÖNGÜLERİ ---
           useEffect(() => {
             const clockTimer = setInterval(() => setTime(new Date()), 1000);
@@ -238,8 +341,8 @@
                     const nextGarage = currentGarage.map(car => {
                         if (car.status === 'selling') {
                             const ratio = car.sellPrice / car.marketValue;
-                            let chance = 0.08 / Math.pow(ratio, 3); 
-                            if (ratio < 0.8) chance = 0.9;
+                            let chance = 0.05 / (ratio * ratio * ratio); 
+                            if (chance > 0.8) chance = 0.8; if (chance < 0.001) chance = 0.001;
 
                             if (Math.random() < chance) {
                                 updated = true;
@@ -292,8 +395,8 @@
               setExchangeRate(prev => {
                 const change = (Math.random() - 0.5) * 0.1;
                 let newRate = prev + change;
-                if (newRate < 33.50) newRate = 33.50 + Math.random() * 0.2;
-                if (newRate > 35.50) newRate = 35.50 - Math.random() * 0.2;
+                if (newRate < 33.50) newRate = 33.50;
+                if (newRate > 35.50) newRate = 35.50;
                 return parseFloat(newRate.toFixed(4));
               });
 
@@ -310,7 +413,7 @@
             return () => clearInterval(marketTimer);
           }, []);
 
-          // --- YARDIMCI FONKSİYONLAR ---
+          // --- HELPERS ---
           const formatTL = (amount) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
           const formatUSD = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount);
           const formatTime = (date) => date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -455,7 +558,8 @@
             const saveData = {
                 moneyTL, moneyUSD, 
                 businesses: businesses.map(({icon, ...rest}) => rest), 
-                estates, garage, assets
+                estates: estates.map(e => ({ id: e.id, count: e.count })), 
+                garage, assets
             };
             localStorage.setItem('tycoonSave', JSON.stringify(saveData));
             addNotification("Oyun manuel olarak kaydedildi!");
@@ -476,7 +580,7 @@
                 const y = height - ((price - min) / range) * height; 
                 return `${x},${y}`;
             }).join(' ');
-            const isGoingUp = history[history.length - 1] >= history[0];
+            const isGoingUp = asset.price > history[history.length - 2];
             const color = isGoingUp ? '#4ade80' : '#f87171'; 
 
             return (
@@ -509,10 +613,7 @@
               <div className="bg-slate-800 p-2 shadow-xl border-b border-slate-700 z-10 flex-none">
                 <div className="flex justify-between items-center px-2 mb-2 text-xs md:text-sm border-b border-slate-700/50 pb-1">
                     <div className="flex items-center gap-2 text-yellow-400 font-mono"><span className="bg-slate-700 px-1 rounded">USD/TRY</span><span className="font-bold text-lg">{exchangeRate.toFixed(4)}</span><span className="animate-pulse text-[10px] text-slate-400">● Canlı</span></div>
-                    <div className="flex items-center gap-4">
-                        <button onClick={manualSave} className="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs bg-slate-700/50 px-2 py-1 rounded"><Save size={14} /> Kaydet</button>
-                        <div className="flex items-center gap-2 text-slate-300 bg-slate-700/50 px-2 py-0.5 rounded-full"><Clock size={14} /><span className="font-mono">{formatTime(time)}</span></div>
-                    </div>
+                    <div className="flex items-center gap-2 text-slate-300 bg-slate-700/50 px-2 py-0.5 rounded-full"><Clock size={14} /><span className="font-mono">{formatTime(time)}</span></div>
                 </div>
                 <div className="flex justify-between items-center px-2">
                     <div className="flex flex-col"><span className="text-slate-400 text-[10px] uppercase">Nakit (TL)</span><span className="text-xl md:text-2xl font-bold text-white font-mono tracking-tight">{formatTL(moneyTL)}</span></div>
@@ -569,7 +670,7 @@
                     </div>
                   )}
 
-                  {/* GALERİ (KİLİTLİ OLABİLİR) */}
+                  {/* GALERİ */}
                   {activeTab === 'gallery' && (
                       <div className="space-y-4 animate-in slide-in-from-right-10 duration-300">
                           <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 mb-4 sticky top-0 z-20 backdrop-blur-md bg-slate-800/90">
@@ -633,6 +734,7 @@
                          <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 overflow-x-auto mb-4">
                             {[
                                 { id: 'exchange', label: 'Döviz', icon: ArrowRightLeft },
+                                { id: 'portfolio', label: 'Portföy', icon: PieChart },
                                 { id: 'crypto', label: 'Kripto', icon: Bitcoin },
                                 { id: 'stock', label: 'Hisse', icon: Activity },
                                 { id: 'commodity', label: 'Emtia', icon: Gem },
@@ -656,7 +758,44 @@
                              </div>
                          )}
 
-                         {marketTab !== 'exchange' && (
+                         {/* PORTFÖY SEKME İÇERİĞİ */}
+                         {marketTab === 'portfolio' && (
+                            <div className="space-y-3">
+                                <div className="bg-slate-800 p-4 rounded-xl border border-blue-500/30 mb-4">
+                                    <h2 className="text-blue-300 font-bold flex items-center gap-2"><PieChart size={20}/> Varlık Portföyü</h2>
+                                    <p className="text-xs text-blue-200/70 mt-1">Sahip olduğunuz tüm borsa varlıklarının anlık durumu.</p>
+                                </div>
+                                {assets.filter(a => a.owned > 0).length === 0 ? (
+                                    <div className="text-center text-slate-500 py-10">Henüz bir varlık satın almadınız.</div>
+                                ) : (
+                                    assets.filter(a => a.owned > 0).map(asset => {
+                                        const isUp = asset.change >= 0;
+                                        const totalValue = asset.owned * asset.price;
+                                        return (
+                                            <div key={asset.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                                                <div>
+                                                    <div className="font-bold text-white flex items-center gap-2">
+                                                        {asset.name} 
+                                                        <span className={`text-xs ${isUp ? 'text-green-400' : 'text-red-400'} flex items-center`}>
+                                                            {isUp ? <TrendingUp size={12}/> : <TrendingDown size={12}/>} %{(asset.change * 100).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-slate-400">Adet: <span className="text-white font-mono">{asset.owned}</span></div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-bold text-white font-mono">{formatUSD(totalValue)}</div>
+                                                    <div className="text-xs text-slate-500 font-mono">Birim: {formatUSD(asset.price)}</div>
+                                                </div>
+                                                <button onClick={() => sellAsset(asset.id)} className="ml-3 bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-xs font-bold">SAT</button>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
+                         )}
+
+
+                         {marketTab !== 'exchange' && marketTab !== 'portfolio' && ( // Kripto, Hisse, Emtia
                             <>
                                 {selectedAssetId && renderChart(selectedAssetId)}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -768,5 +907,4 @@
         }
     </script>
 </body>
-
 </html>
